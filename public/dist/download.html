@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件下载 - 积分系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">文件下载</h1>
+            <div id="fileInfo" class="mb-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-gray-600 mb-2">文件名：<span id="fileName" class="text-gray-800 font-medium">加载中...</span></p>
+                    <p class="text-gray-600 mb-2">所需积分：<span id="requiredPoints" class="text-gray-800 font-medium">加载中...</span></p>
+                    <p class="text-gray-600 mb-2">您的积分：<span id="userPoints" class="text-gray-800 font-medium">加载中...</span></p>
+                    <p class="text-gray-600">文件描述：<span id="fileDescription" class="text-gray-800 font-medium">加载中...</span></p>
+                </div>
+            </div>
+            <div id="downloadSection" class="text-center">
+                <button id="downloadBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    下载文件
+                </button>
+                <p id="errorMsg" class="text-red-500 mt-2 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 从URL中获取文件路径
+        const fileUrl = decodeURIComponent(window.location.pathname.replace('/download/', ''));
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        let pointConfig = null;
+        let userInfo = null;
+
+        // 获取文件积分配置
+        async function getFilePointConfig() {
+            try {
+                const response = await fetch('/api/getFileInfo?fileUrl=' + encodeURIComponent(fileUrl));
+                const data = await response.json();
+                if (data.code === 200) {
+                    pointConfig = data.data;
+                    document.getElementById('fileName').textContent = pointConfig.fileName;
+                    document.getElementById('requiredPoints').textContent = pointConfig.points;
+                    document.getElementById('fileDescription').textContent = pointConfig.description || '暂无描述';
+                } else {
+                    throw new Error(data.error || '未找到该文件的积分配置');
+                }
+            } catch (error) {
+                showError('获取文件信息失败：' + error.message);
+            }
+        }
+
+        // 获取用户积分信息
+        async function getUserInfo() {
+            try {
+                const response = await fetch('/api/getUserInfo');
+                const data = await response.json();
+                if (data.code === 200) {
+                    userInfo = data.user;
+                    document.getElementById('userPoints').textContent = userInfo.points;
+                    updateDownloadButton();
+                }
+            } catch (error) {
+                showError('获取用户信息失败：' + error.message);
+            }
+        }
+
+        // 更新下载按钮状态
+        function updateDownloadButton() {
+            if (pointConfig && userInfo) {
+                downloadBtn.disabled = userInfo.points < pointConfig.points;
+                if (downloadBtn.disabled) {
+                    showError('积分不足，无法下载');
+                }
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.remove('hidden');
+        }
+
+        // 下载文件
+        downloadBtn.addEventListener('click', async () => {
+            try {
+                downloadBtn.disabled = true;
+                const response = await fetch('/api/downloadFile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileUrl: fileUrl
+                    })
+                });
+                const data = await response.json();
+                if (data.code === 200) {
+                    window.location.href = data.downloadUrl;
+                    // 更新用户积分显示
+                    userInfo.points -= pointConfig.points;
+                    document.getElementById('userPoints').textContent = userInfo.points;
+                    updateDownloadButton();
+                } else {
+                    throw new Error(data.error || '下载失败');
+                }
+            } catch (error) {
+                showError('下载失败：' + error.message);
+            } finally {
+                downloadBtn.disabled = false;
+            }
+        });
+
+        // 初始化页面
+        getFilePointConfig();
+        getUserInfo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# IDE
+.idea/
+.vscode/
+.trae/
+
+# Binary files
+qlist
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Database files
+*.db
+*.sqlite
+db.sqllite
+
+# Config files
+config.json
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Dependency directories
+vendor/
+
+# Test binary, built with 'go test -c'
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# macOS
+.DS_Store

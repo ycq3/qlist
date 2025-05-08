@@ -1,0 +1,122 @@
+<html>
+<head>
+    <title>管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/dist/admin.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">管理后台</h1>
+        
+        <!-- 用户管理区块 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">用户管理</h2>
+            
+            <!-- 用户列表 -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-600">用户列表</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="usersTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前积分</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- 用户数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 积分操作表单 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium mb-4 text-gray-600">积分操作</h3>
+                <form id="userPointsForm" class="space-y-4">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">用户名</label>
+                            <input type="text" name="username" required 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">积分变更</label>
+                            <input type="number" name="points" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">操作说明</label>
+                            <input type="text" name="description" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" 
+                            class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        提交积分变更
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 积分配置区块 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">积分配置</h2>
+            
+            <div class="mb-8">
+                <h3 class="text-lg font-medium mb-4 text-gray-600">积分规则配置</h3>
+                <form id="pointsForm" class="space-y-4">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">文件链接</label>
+                            <input type="text" name="fileUrl" required 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">积分</label>
+                            <input type="number" name="points" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">文件描述</label>
+                            <input type="text" name="description" placeholder="请输入文件描述"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" 
+                            class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        保存配置
+                    </button>
+                </form>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-medium mb-4 text-gray-600">已配置列表</h3>
+                <table id="pointsTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文件链接</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">积分</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文件描述</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 表格数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-medium mb-4 text-gray-600">积分日志</h3>
+                <div id="pointsLog" class="space-y-2">
+                    <!-- 日志内容将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/dist/points_management.js"></script>
+</body>
+</html>

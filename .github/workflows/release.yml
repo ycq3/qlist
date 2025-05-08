@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build for multiple platforms
+        run: |
+          # Linux
+          GOOS=linux GOARCH=amd64 go build -v -o qlist-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -v -o qlist-linux-arm64
+          tar -czf qlist-linux-amd64.tar.gz qlist-linux-amd64
+          tar -czf qlist-linux-arm64.tar.gz qlist-linux-arm64
+
+          # macOS
+          GOOS=darwin GOARCH=amd64 go build -v -o qlist-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -v -o qlist-darwin-arm64
+          tar -czf qlist-darwin-amd64.tar.gz qlist-darwin-amd64
+          tar -czf qlist-darwin-arm64.tar.gz qlist-darwin-arm64
+
+          # Windows
+          GOOS=windows GOARCH=amd64 go build -v -o qlist-windows-amd64.exe
+          GOOS=windows GOARCH=arm64 go build -v -o qlist-windows-arm64.exe
+          zip qlist-windows-amd64.zip qlist-windows-amd64.exe
+          zip qlist-windows-arm64.zip qlist-windows-arm64.exe
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            qlist-linux-amd64.tar.gz
+            qlist-linux-arm64.tar.gz
+            qlist-darwin-amd64.tar.gz
+            qlist-darwin-arm64.tar.gz
+            qlist-windows-amd64.zip
+            qlist-windows-arm64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/qlist:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/qlist:${{ github.ref_name }}

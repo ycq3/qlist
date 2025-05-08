@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>配置页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/animate.css/4.1.1/animate.min.css">
+    <style>
+        .db-config.hidden { display: none !important; }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">系统配置</h1>
+        <form id="configForm" class="space-y-6">
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label for="port" class="block text-sm font-medium text-gray-700">端口号</label>
+                    <input type="number" id="port" name="port" required min="0" max="65535" value="8080"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">后台用户名</label>
+                        <input type="text" id="username" name="username" required value="admin"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            oninvalid="this.setCustomValidity('请输入用户名')" oninput="this.setCustomValidity('')">
+                        <p class="mt-1 text-sm text-red-600 hidden flex items-center gap-2" data-error="username"><svg class="w-4 h-4" fill="currentColor"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm1 16h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span></span></p>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">后台密码</label>
+                        <input type="password" id="password" name="password" required value="admin"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            oninvalid="this.setCustomValidity('请输入密码')"
+                            oninput="this.setCustomValidity('')">
+                        <p class="mt-1 text-sm text-red-600 hidden flex items-center gap-2" data-error="password"><svg class="w-4 h-4" fill="currentColor"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm1 16h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span></span></p>
+                    </div>
+
+                    <div>
+                        <label for="dbType" class="block text-sm font-medium text-gray-700">数据库类型</label>
+                        <select id="dbType" name="db_type" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="mysql">MySQL</option>
+                            <option value="postgres">PostgreSQL</option>
+                            <option value="sqlite" selected>SQLite</option>
+                        </select>
+                    </div>
+
+                    <div id="mysqlConfig" class="db-config hidden space-y-4 animate__animated animate__fadeIn">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">MySQL 配置</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <input type="text" name="mysql_host" placeholder="主机" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="number" name="mysql_port" placeholder="端口" value="3306" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="text" name="mysql_user" placeholder="用户名" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="password" name="mysql_pass" placeholder="密码" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div class="col-span-2">
+                                <input type="text" name="mysql_db" placeholder="数据库名" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="postgresConfig" class="db-config hidden space-y-4 animate__animated animate__fadeIn">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">PostgreSQL 配置</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <input type="text" name="pg_host" placeholder="主机" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="number" name="pg_port" placeholder="端口" value="5432" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="text" name="pg_user" placeholder="用户名" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <input type="password" name="pg_pass" placeholder="密码" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div class="col-span-2">
+                                <input type="text" name="pg_db" placeholder="数据库名" required
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sqliteConfig" class="db-config hidden space-y-4 animate__animated animate__fadeIn">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">SQLite 配置</h3>
+                        <div class="space-y-4">
+                            <input type="text" name="sqlite_path" placeholder="文件路径（例如：/data/db.sqlite）" required
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <p class="text-sm text-gray-500">请确保指定路径有写入权限</p>
+                        </div>
+                    </div>
+                    <!-- Alist 配置 -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">Alist 配置</h3>
+                        <div>
+                            <label for="alistHost" class="block text-sm font-medium text-gray-700">Alist 主机地址</label>
+                            <input type="text" id="alistHost" name="alist.host" required value="localhost"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="alistUsername" class="block text-sm font-medium text-gray-700">Alist 用户名</label>
+                            <input type="text" id="alistUsername" name="alist.username" required value="admin"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="alistPassword" class="block text-sm font-medium text-gray-700">Alist 密码</label>
+                            <input type="password" id="alistPassword" name="alist.password" required value="admin"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 disabled:opacity-50">
+                        保存配置
+                    </button>
+                </div>
+        </form>
+    </div>
+
+    <script>
+
+        fetch('/check-config')
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // 配置文件存在，重定向到管理后台
+                    window.location.href = data.redirect;
+                } else {
+                    // 配置文件不存在，显示配置表单
+                    document.getElementById('configForm').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('检查配置文件失败:', error);
+            });
+        // 初始化配置显示状态
+        const dbConfigs = {
+            mysql: document.getElementById('mysqlConfig'),
+            postgres: document.getElementById('postgresConfig'),
+            sqlite: document.getElementById('sqliteConfig')
+        };
+
+        // 切换数据库配置时处理属性
+        const handleDBConfig = (currentType) => {
+            Object.entries(dbConfigs).forEach(([type, config]) => {
+                const isActive = type === currentType;
+                config.classList.toggle('hidden', !isActive);
+                config.querySelectorAll('[required]').forEach(input => {
+                    input.toggleAttribute('required', isActive);
+                });
+            });
+        };
+
+        // 新增连接字符串生成函数
+        const buildConnString = (type, formData) => {
+          const strategies = {
+            mysql: () => {
+              const [user, pass, host, port, db] = ['mysql_user','mysql_pass','mysql_host','mysql_port','mysql_db']
+                .map(field => formData.get(field).trim());
+              return `${user}:${pass}@tcp(${host}:${port})/${db}`;
+            },
+            postgres: () => {
+              const [host, port, user, pass, db] = ['pg_host','pg_port','pg_user','pg_pass','pg_db']
+                .map(field => formData.get(field).trim());
+              return `host=${host} port=${port} user=${user} password=${pass} dbname=${db}`;
+            },
+            sqlite: () => formData.get('sqlite_path').trim()
+          };
+          return strategies[type]?.() || '';
+        };
+
+        // 表单提交处理
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true; // 禁用提交按钮防止重复提交
+            
+            // 移除所有隐藏项的required属性
+            document.querySelectorAll('.db-config:not(.hidden) [required]').forEach(input => {
+                input.removeAttribute('required');
+            });
+
+            // 清除旧错误提示
+            document.querySelectorAll('[data-error]').forEach(el => {
+                el.classList.add('hidden');
+            });
+
+            try {
+                // 动态验证可见表单项
+                const visibleInputs = Array.from(document.querySelectorAll('.db-config:not(.hidden) [required]'));
+                for (const input of visibleInputs) {
+                    if (!input.reportValidity()) {
+                        const errorEl = document.querySelector(`[data-error="${input.name}"]`);
+                        if (errorEl) {
+                            errorEl.textContent = input.validationMessage;
+                            errorEl.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                }
+
+                
+                
+                // 获取当前数据库类型并构建连接字符串
+                const dbType = document.getElementById('dbType').value;
+                const formData = new FormData(e.target);
+                formData.set('db_conn', buildConnString(dbType, formData));
+                const formDataObj = Object.fromEntries(formData.entries()); // 将FormData转为普通对象
+
+                // 处理点分键转换为嵌套对象（如alist.host -> alist: { host: ... }
+                const configData = {};
+                for (const [key, value] of Object.entries(formDataObj)) {
+                    if (key === 'port') {
+                        // 将端口号从字符串转换为数字类型
+                        configData[key] = Number(value);
+                        continue;
+                    }
+                    if (key.includes('.')) {
+                        const [parent, child] = key.split('.');
+                        if (!configData[parent]) {
+                            configData[parent] = {};
+                        }
+                        configData[parent][child] = value;
+                    } else {
+                        configData[key] = value;
+                    }
+                }
+
+                // 提交表单逻辑
+                const response = await fetch('/save-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData) // 转换为嵌套结构的JSON字符串
+                });
+
+                // 添加状态提示容器
+                const notice = document.createElement('div');
+                notice.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 px-4 py-2 rounded-md shadow-lg animate__animated animate__fadeInDown';
+                if (response.ok) {
+                    notice.textContent = '配置保存成功！';
+                    window.setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    notice.className = notice.className.replace('bg-green-100 text-green-800', 'bg-red-100 text-red-800');
+                    notice.textContent = '配置保存失败，请检查输入';
+                }
+                document.body.appendChild(notice);
+                // 自动关闭提示
+                window.setTimeout(() => {
+                    notice.classList.add('animate__fadeOutUp');
+                    window.setTimeout(() => notice.remove(), 500);
+                }, 2000);
+            } catch (error) {
+                console.error('请求错误:', error);
+            } finally {
+                submitBtn.disabled = false; // 恢复提交按钮状态
+            }
+        });
+
+        // 初始化显示逻辑
+        const initialType = document.getElementById('dbType').value;
+        handleDBConfig(initialType);
+        // 初始显示对应配置块
+        const initialConfig = dbConfigs[initialType];
+        initialConfig.classList.remove('hidden');
+        initialConfig.querySelectorAll('[required]').forEach(input => input.setAttribute('required', true));
+        // 延迟添加动画避免闪烁
+        setTimeout(() => initialConfig.classList.add('animate__fadeIn'), 50);
+
+    // 添加数据库类型切换事件监听
+    document.getElementById('dbType').addEventListener('change', (e) => {
+        const currentType = e.target.value;
+        handleDBConfig(currentType);
+    });
+
+    </script>
+</body>
+
+</html>
