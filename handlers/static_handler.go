@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-	"os"
 	"path"
 	"qlist/config"
 	"qlist/public"
@@ -24,57 +22,21 @@ func (h *StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/dist/admin.html", http.StatusMovedPermanently)
 		return
 	case "/save-config":
-		if r.Method != http.MethodPost {
-			http.Error(w, "无效的请求方法", http.StatusMethodNotAllowed)
-			return
-		}
-		// 检查 config.json 文件是否存在
-		if _, err := os.Stat("config.json"); err == nil {
-			// 文件存在，拒绝修改
-			http.Error(w, "配置文件已存在，不允许修改", http.StatusForbidden)
-			return
-		}
-		var newConfig config.AppConfig
-		err := json.NewDecoder(r.Body).Decode(&newConfig)
-		if err != nil {
-			http.Error(w, "解析请求体失败", http.StatusBadRequest)
-			return
-		}
-		config.Instance = newConfig
-		err = config.SaveConfig("config.json")
-		if err != nil {
-			http.Error(w, "保存配置文件失败", http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
+		// 使用 ConfigHandler 处理配置保存
+		(&ConfigHandler{}).SaveConfig(w, r)
 		return
 	case "/check-config":
-		var status struct {
-			Exists   bool   `json:"exists"`
-			Redirect string `json:"redirect"`
-		}
-		if _, err := os.Stat("config.json"); os.IsNotExist(err) {
-			status = struct {
-				Exists   bool   `json:"exists"`
-				Redirect string `json:"redirect"`
-			}{Exists: false, Redirect: "/config.html"}
-		} else {
-			status = struct {
-				Exists   bool   `json:"exists"`
-				Redirect string `json:"redirect"`
-			}{Exists: true, Redirect: "/admin"}
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(status)
+		// 使用 ConfigHandler 处理配置检查
+		(&ConfigHandler{}).CheckConfigExists(w, r)
 		return
 	}
 
 	// 对admin.html进行认证检查
-	if urlPath == "/admin.html" {
+	if urlPath == "/dist/admin.html" {
 		// 检查管理账号配置是否存在
 		if config.Instance.Username == "" || config.Instance.Password == "" {
-			http.Error(w, "管理账号未配置", http.StatusForbidden)
+			// 重定向到配置页面
+			http.Redirect(w, r, "/dist/config.html", http.StatusTemporaryRedirect)
 			return
 		}
 

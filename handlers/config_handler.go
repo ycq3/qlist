@@ -9,6 +9,7 @@ import (
 	"os"
 	"qlist/config"
 	"qlist/public"
+	"time"
 )
 
 // ConfigHandler 处理配置相关的请求
@@ -87,7 +88,20 @@ func (h *ConfigHandler) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 设置响应头
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
+	// 返回成功消息
+	json.NewEncoder(w).Encode(map[string]string{"message": "配置保存成功，服务器将在3秒后重启"})
+
+	// 异步重启服务器
+	go func() {
+		// 等待3秒，确保响应已发送
+		time.Sleep(3 * time.Second)
+		// 退出程序，依赖系统服务管理器（如 systemd）重启服务
+		os.Exit(0)
+	}()
 }
 
 // ServeAdminPage 处理管理后台页面请求

@@ -21,6 +21,12 @@
                     <input type="number" id="port" name="port" required min="0" max="65535" value="8080"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 </div>
+                <div>
+                    <label for="defaultPoints" class="block text-sm font-medium text-gray-700">默认积分值</label>
+                    <input type="number" id="defaultPoints" name="default_points" required min="0" value="10"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">未配置积分的文件将使用此默认值</p>
+                </div>
                 <div class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700">后台用户名</label>
@@ -230,8 +236,8 @@
                 // 处理点分键转换为嵌套对象（如alist.host -> alist: { host: ... }
                 const configData = {};
                 for (const [key, value] of Object.entries(formDataObj)) {
-                    if (key === 'port') {
-                        // 将端口号从字符串转换为数字类型
+                    if (key === 'port' || key === 'default_points') {
+                        // 将端口和默认积分转换为数字
                         configData[key] = Number(value);
                         continue;
                     }

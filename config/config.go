@@ -25,12 +25,13 @@ func GetDialector() (gorm.Dialector, error) {
 }
 
 type AppConfig struct {
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	DBType   string `json:"db_type"`
-	DBConn   string `json:"db_conn"`
-	Alist    struct {
+	Port          int    `json:"port"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	DBType        string `json:"db_type"`
+	DBConn        string `json:"db_conn"`
+	DefaultPoints int    `json:"default_points"` // 默认积分配置
+	Alist         struct {
 		Host     string `json:"host"`
 		Username string `json:"username"`
 		Password string `json:"password"`

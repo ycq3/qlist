@@ -28,15 +28,15 @@ func main() {
 	if err != nil {
 		// 使用默认配置
 		config.Instance.Port = 8080
-	}
-
-	// 初始化数据库连接
-	if err := api.InitDB(); err != nil {
-		log.Fatal(err)
+	} else {
+		// 初始化数据库连接
+		if err := api.InitDB(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// 初始化 Swagger 文档
-	docs.SwaggerInfo.Title = "积分管理系统 API"
+	docs.SwaggerInfo.Title = "Qlist积分管理系统 API"
 	docs.SwaggerInfo.Description = "提供用户积分管理、积分配置和积分日志查询等功能"
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.BasePath = "/api"

@@ -280,10 +280,14 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 查找文件积分配置
-	var config models.PointConfig
-	if result := db.Where("file_url = ?", data.FileUrl).First(&config); result.Error != nil {
-		respondWithError(w, http.StatusNotFound, "未找到文件积分配置")
-		return
+	var configModel models.PointConfig
+	if result := db.Where("file_url = ?", data.FileUrl).First(&configModel); result.Error != nil {
+		// 使用默认积分配置
+		configModel = models.PointConfig{
+			FileUrl:     data.FileUrl,
+			Points:      config.Instance.DefaultPoints,
+			Description: "无",
+		}
 	}
 
 	// TODO: 从session或token中获取用户信息
@@ -296,7 +300,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 检查用户积分是否足够
-	if user.Points < config.Points {
+	if user.Points < configModel.Points {
 		respondWithError(w, http.StatusForbidden, "积分不足")
 		return
 	}
@@ -305,7 +309,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	tx := db.Begin()
 
 	// 扣除用户积分
-	user.Points -= config.Points
+	user.Points -= configModel.Points
 	if err := tx.Save(&user).Error; err != nil {
 		tx.Rollback()
 		respondWithError(w, http.StatusInternalServerError, "扣除积分失败")
@@ -315,7 +319,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	// 创建积分变更日志
 	log := models.PointLog{
 		UserID:      user.ID,
-		Points:      -config.Points,
+		Points:      -configModel.Points,
 		Type:        "file_access",
 		Description: fmt.Sprintf("下载文件：%s", data.FileUrl),
 		FileUrl:     data.FileUrl,
