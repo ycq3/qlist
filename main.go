@@ -23,6 +23,12 @@ func main() {
 	http.HandleFunc("/download/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/dist/download.html")
 	})
+	http.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/dist/login.html")
+	})
+	http.HandleFunc("/register.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/dist/register.html")
+	})
 
 	// 加载配置文件
 	err := config.LoadConfig("config.json")
@@ -58,6 +64,9 @@ func main() {
 	http.HandleFunc("/api/getUserInfo", api.GetUserInfo)
 	http.HandleFunc("/api/downloadFile", api.DownloadFile)
 	http.HandleFunc("/api/getFileInfo", api.GetFileInfo)
+	// 本地登录注册接口
+	http.HandleFunc("/api/login/local", api.LocalLoginHandler)
+	http.HandleFunc("/api/register/local", api.LocalRegisterHandler)
 	// 三方登录跳转接口
 	http.HandleFunc("/api/login/google", api.LoginGoogle)
 	http.HandleFunc("/api/login/github", api.LoginGitHub)
