@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     logItem.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div>
-                                <span class="text-sm font-medium">${log.username}</span>
+                                <span class="text-sm font-medium">${log.userId}</span>
                                 <span class="text-sm text-gray-500 mx-2">-</span>
                                 <span class="text-sm">${log.description || log.fileUrl}</span>
                             </div>
