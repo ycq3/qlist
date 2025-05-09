@@ -8,12 +8,13 @@ import (
 
 // User 用户模型，支持多渠道（provider）和本地密码
 type User struct {
-	ID       uint       `gorm:"primaryKey" json:"id"`
-	Username string     `gorm:"index:idx_user_provider,unique;size:128" json:"username"` // 用户名或邮箱
-	Provider string     `gorm:"index:idx_user_provider,unique;size:32" json:"provider"`  // 用户来源渠道 local/google/github/wechat
-	Password string     `gorm:"size:255" json:"password,omitempty"`                      // 本地用户密码，三方登录为空
-	Points   int        `json:"points"`
-	Logs     []PointLog `gorm:"foreignKey:UserID" json:"logs,omitempty"`
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	Username  string     `gorm:"index:idx_user_provider,unique;size:128" json:"username"` // 用户名或邮箱
+	Provider  string     `gorm:"index:idx_user_provider,unique;size:32" json:"provider"`  // 用户来源渠道 local/google/github/wechat
+	Password  string     `gorm:"size:255" json:"password,omitempty"`                      // 本地用户密码，三方登录为空
+	Points    int        `json:"points"`
+	Logs      []PointLog `gorm:"foreignKey:UserID" json:"logs,omitempty"`
+	CreatedAt time.Time  `gorm:"autoCreateTime" json:"createdAt"`
 }
 
 // PointConfig 积分配置

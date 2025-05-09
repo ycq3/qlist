@@ -81,8 +81,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.users.forEach(user => {
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-gray-50';
+                    // 格式化 createdAt 日期
+                    const createdAt = new Date(user.createdAt).toLocaleString();
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.username}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.provider}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${createdAt}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.points}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <button onclick="fillUserForm('${user.username}')" 
@@ -95,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 usersTableBody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-6 py-4 text-center text-sm text-red-500">
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">
                             加载失败：${error.message}
                         </td>
                     </tr>
@@ -123,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 pointsTableBody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-6 py-4 text-center text-sm text-red-500">
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">
                             加载失败：${error.message}
                         </td>
                     </tr>

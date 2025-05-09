@@ -8,6 +8,7 @@
 - [x] SqlLite
 
 ## 登陆支持
+- [x] 邮箱
 - [x] 微信
 - [x] Google
 - [x] Gtihub

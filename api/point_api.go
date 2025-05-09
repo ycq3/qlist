@@ -133,14 +133,18 @@ func GetUsersList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var users []models.User
-	if result := db.Find(&users); result.Error != nil {
+	// Preload Logs to avoid N+1 query problem if logs are needed in the future, though not directly used now.
+	if result := db.Preload("Logs").Find(&users); result.Error != nil {
 		respondWithError(w, http.StatusInternalServerError, "获取用户列表失败")
 		return
 	}
 
+	// Optionally, transform users if needed, e.g., to format CreatedAt or customize output
+	// For now, directly returning users as is, assuming GORM handles CreatedAt population and JSON marshaling correctly.
+
 	respondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"code":  http.StatusOK,
-		"users": users,
+		"users": users, // Ensure 'users' includes 'Provider' and 'CreatedAt' due to model changes
 	})
 }
 
