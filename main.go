@@ -58,6 +58,13 @@ func main() {
 	http.HandleFunc("/api/getUserInfo", api.GetUserInfo)
 	http.HandleFunc("/api/downloadFile", api.DownloadFile)
 	http.HandleFunc("/api/getFileInfo", api.GetFileInfo)
+	// 三方登录跳转接口
+	http.HandleFunc("/api/login/google", api.LoginGoogle)
+	http.HandleFunc("/api/login/github", api.LoginGitHub)
+	http.HandleFunc("/api/login/wechat", api.LoginWechat)
+	http.HandleFunc("/api/login/google/callback", api.GoogleCallback)
+	http.HandleFunc("/api/login/github/callback", api.GitHubCallback)
+	http.HandleFunc("/api/login/wechat/callback", api.WechatCallback)
 
 	// 敏感API路由（需要认证）
 	http.HandleFunc("/api/configurePoints", authMiddleware.RequireAuth(api.ConfigurePoints))

@@ -6,12 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// User 用户信息
+// User 用户模型，支持多渠道（provider）和本地密码
 type User struct {
-	gorm.Model
-	Username string     `gorm:"column:username;type:varchar(50);uniqueIndex" json:"username"`
-	Points   int        `gorm:"column:points;default:0" json:"points"` // 用户当前积分
-	Logs     []PointLog `gorm:"foreignKey:UserID" json:"logs"`         // 用户积分变更记录
+	ID       uint       `gorm:"primaryKey" json:"id"`
+	Username string     `gorm:"index:idx_user_provider,unique;size:128" json:"username"` // 用户名或邮箱
+	Provider string     `gorm:"index:idx_user_provider,unique;size:32" json:"provider"`  // 用户来源渠道 local/google/github/wechat
+	Password string     `gorm:"size:255" json:"password,omitempty"`                      // 本地用户密码，三方登录为空
+	Points   int        `json:"points"`
+	Logs     []PointLog `gorm:"foreignKey:UserID" json:"logs,omitempty"`
 }
 
 // PointConfig 积分配置

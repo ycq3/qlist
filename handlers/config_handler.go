@@ -149,6 +149,10 @@ func (h *ConfigHandler) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	// 自动生成 API Key（以用户名+时间戳为基础，建议后续替换为更安全的生成方式）
 	apiKey := base64.StdEncoding.EncodeToString([]byte(config.Instance.Username + time.Now().Format("20060102150405")))
 	config.Instance.APIKey = apiKey
+	// 自动生成 JWTSecret
+	if config.Instance.JWTSecret == "" {
+		config.Instance.JWTSecret = config.GenerateRandomSecret(32)
+	}
 	err = config.SaveConfig("config.json")
 	if err != nil {
 		http.Error(w, "保存配置文件失败", http.StatusInternalServerError)

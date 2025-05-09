@@ -42,6 +42,7 @@ require (
 
 require (
 	github.com/go-sql-driver/mysql v1.9.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
