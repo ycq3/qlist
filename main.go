@@ -7,6 +7,7 @@ import (
 	"qlist/config"
 	"qlist/docs"
 	"qlist/handlers"
+	"qlist/middleware"
 	"strconv"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -44,19 +45,27 @@ func main() {
 	// 初始化静态文件处理器
 	staticHandler := &handlers.StaticHandler{}
 
+	// 初始化认证中间件
+	authMiddleware := &middleware.AuthMiddleware{}
+
 	// 注册静态文件处理器，处理所有静态文件和需要权限控制的页面
 	http.Handle("/", staticHandler)
 
-	// API routes
+	// 普通API路由（无需认证）
 	http.HandleFunc("/api/getUserPoints", api.GetUserPoints)
-	http.HandleFunc("/api/configurePoints", api.ConfigurePoints)
 	http.HandleFunc("/api/getPointsLog", api.GetPointsLog)
 	http.HandleFunc("/api/getPointsList", api.GetPointsList)
-	http.HandleFunc("/api/getUsersList", api.GetUsersList)
-	http.HandleFunc("/api/adminGrantPoints", api.AdminGrantPoints)
 	http.HandleFunc("/api/getUserInfo", api.GetUserInfo)
 	http.HandleFunc("/api/downloadFile", api.DownloadFile)
 	http.HandleFunc("/api/getFileInfo", api.GetFileInfo)
+
+	// 敏感API路由（需要认证）
+	http.HandleFunc("/api/configurePoints", authMiddleware.RequireAuth(api.ConfigurePoints))
+	http.HandleFunc("/api/getUsersList", authMiddleware.RequireAuth(api.GetUsersList))
+	http.HandleFunc("/api/adminGrantPoints", authMiddleware.RequireAuth(api.AdminGrantPoints))
+	handler := &handlers.ConfigHandler{}
+	http.HandleFunc("/api/generateApiKey", authMiddleware.RequireAuth(handler.GenerateAPIKey))
+	http.HandleFunc("/api/getApiKey", authMiddleware.RequireAuth(handler.GetApiKey))
 
 	// Swagger API 文档
 	http.Handle("/swagger/", httpSwagger.Handler(

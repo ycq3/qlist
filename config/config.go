@@ -28,6 +28,7 @@ type AppConfig struct {
 	Port          int    `json:"port"`
 	Username      string `json:"username"`
 	Password      string `json:"password"`
+	APIKey        string `json:"api_key"` // 独立的 API Key 字段
 	DBType        string `json:"db_type"`
 	DBConn        string `json:"db_conn"`
 	DefaultPoints int    `json:"default_points"` // 默认积分配置

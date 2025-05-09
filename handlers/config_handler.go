@@ -21,7 +21,52 @@ type ConfigStatus struct {
 	Redirect string `json:"redirect"`
 }
 
+// APIKeyResponse API Key 响应结构体
+type APIKeyResponse struct {
+	APIKey string `json:"api_key"`
+}
+
+// GenerateAPIKey 生成新的 API Key 并保存到配置
+// @Summary 生成新的 API Key
+// @Description 管理员生成新的 API Key 并保存到配置文件，返回生成的 API Key
+// @Tags 配置管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} APIKeyResponse "生成成功，返回新的 API Key"
+// @Failure 503 {string} string "管理员账号未配置"
+// @Failure 405 {string} string "无效的请求方法"
+// @Failure 500 {string} string "保存API Key失败"
+// @Router /generateApiKey [post]
+func (h *ConfigHandler) GenerateAPIKey(w http.ResponseWriter, r *http.Request) {
+	if config.Instance.Username == "" || config.Instance.Password == "" {
+		http.Error(w, "管理员账号未配置", http.StatusServiceUnavailable)
+		return
+	}
+	// 仅允许 POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "无效的请求方法", http.StatusMethodNotAllowed)
+		return
+	}
+	// 生成随机 API Key（此处用时间戳+用户名简单实现，可替换为更安全的生成方式）
+	apiKey := base64.StdEncoding.EncodeToString([]byte(config.Instance.Username + time.Now().Format("20060102150405")))
+	config.Instance.APIKey = apiKey
+	err := config.SaveConfig("config.json")
+	if err != nil {
+		http.Error(w, "保存API Key失败", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(APIKeyResponse{APIKey: apiKey})
+}
+
 // ServeConfigPage 处理配置页面请求
+// @Summary 获取配置页面
+// @Description 返回系统配置页面的 HTML 内容
+// @Tags 配置管理
+// @Produce html
+// @Success 200 {string} string "配置页面 HTML"
+// @Failure 500 {string} string "配置页面加载失败"
+// @Router /config.html [get]
 func (h *ConfigHandler) ServeConfigPage(w http.ResponseWriter, r *http.Request) {
 	// 设置响应头为HTML格式
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -48,6 +93,12 @@ func (h *ConfigHandler) ServeConfigPage(w http.ResponseWriter, r *http.Request) 
 }
 
 // CheckConfigExists 检查配置文件存在状态
+// @Summary 检查配置文件是否存在
+// @Description 检查 config.json 是否存在，返回存在状态和跳转路径
+// @Tags 配置管理
+// @Produce json
+// @Success 200 {object} ConfigStatus "配置状态"
+// @Router /api/checkConfig [get]
 func (h *ConfigHandler) CheckConfigExists(w http.ResponseWriter, r *http.Request) {
 	var status ConfigStatus
 	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
@@ -61,6 +112,18 @@ func (h *ConfigHandler) CheckConfigExists(w http.ResponseWriter, r *http.Request
 }
 
 // SaveConfig 保存配置
+// @Summary 保存系统配置
+// @Description 保存系统配置到 config.json，仅允许首次设置
+// @Tags 配置管理
+// @Accept json
+// @Produce json
+// @Param config body config.AppConfig true "系统配置信息"
+// @Success 200 {object} map[string]string "保存成功"
+// @Failure 405 {string} string "无效的请求方法"
+// @Failure 403 {string} string "配置文件已存在，不允许修改"
+// @Failure 400 {string} string "解析请求体失败"
+// @Failure 500 {string} string "保存配置文件失败"
+// @Router /api/saveConfig [post]
 func (h *ConfigHandler) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "无效的请求方法", http.StatusMethodNotAllowed)
@@ -82,6 +145,10 @@ func (h *ConfigHandler) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config.Instance = newConfig
+
+	// 自动生成 API Key（以用户名+时间戳为基础，建议后续替换为更安全的生成方式）
+	apiKey := base64.StdEncoding.EncodeToString([]byte(config.Instance.Username + time.Now().Format("20060102150405")))
+	config.Instance.APIKey = apiKey
 	err = config.SaveConfig("config.json")
 	if err != nil {
 		http.Error(w, "保存配置文件失败", http.StatusInternalServerError)
@@ -104,36 +171,14 @@ func (h *ConfigHandler) SaveConfig(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-// ServeAdminPage 处理管理后台页面请求
-func (h *ConfigHandler) ServeAdminPage(w http.ResponseWriter, r *http.Request) {
-	// 检查管理账号配置是否存在
-	if config.Instance.Username == "" || config.Instance.Password == "" {
-		http.Error(w, "管理账号未配置，请先设置配置文件", http.StatusInternalServerError)
-		return
-	}
-
-	// 简单的身份验证
-	if r.Header.Get("Authorization") != "Basic "+base64.StdEncoding.EncodeToString([]byte(config.Instance.Username+":"+config.Instance.Password)) {
-		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-		http.Error(w, "未授权访问", http.StatusUnauthorized)
-		return
-	}
-
-	// 设置响应头为 HTML 格式
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	// 从embed文件系统读取admin.html
-	file, err := public.Public.Open("dist/admin.html")
-	if err != nil {
-		http.Error(w, "管理后台页面不存在", http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		http.Error(w, "读取管理后台页面失败", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(fileContent)
+// GetApiKey 获取当前 API Key
+// @Summary 获取当前 API Key
+// @Description 获取当前配置文件中的 API Key，仅管理员可见
+// @Tags 配置管理
+// @Produce json
+// @Success 200 {object} APIKeyResponse
+// @Router /api/getApiKey [get]
+func (h *ConfigHandler) GetApiKey(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(APIKeyResponse{APIKey: config.Instance.APIKey})
 }

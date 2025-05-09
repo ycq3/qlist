@@ -13,7 +13,6 @@ qlist
 # Database files
 *.db
 *.sqlite
-db.sqllite
 
 # Config files
 config.json

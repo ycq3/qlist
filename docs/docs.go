@@ -15,6 +15,38 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin": {
+            "get": {
+                "description": "返回管理后台页面的 HTML 内容，需管理员身份验证",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "获取管理后台页面",
+                "responses": {
+                    "200": {
+                        "description": "管理后台页面 HTML",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权访问",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "管理后台页面不存在或读取失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/adminGrantPoints": {
             "post": {
                 "description": "管理员给用户增加或减少积分\n获取当前登录用户的信息和积分",
@@ -48,6 +80,133 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/checkConfig": {
+            "get": {
+                "description": "检查 config.json 是否存在，返回存在状态和跳转路径",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "检查配置文件是否存在",
+                "responses": {
+                    "200": {
+                        "description": "配置状态",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ConfigStatus"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/getApiKey": {
+            "get": {
+                "description": "获取当前配置文件中的 API Key，仅管理员可见",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "获取当前 API Key",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.APIKeyResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/saveConfig": {
+            "post": {
+                "description": "保存系统配置到 config.json，仅允许首次设置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "保存系统配置",
+                "parameters": [
+                    {
+                        "description": "系统配置信息",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/config.AppConfig"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "保存成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "解析请求体失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "配置文件已存在，不允许修改",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "405": {
+                        "description": "无效的请求方法",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "保存配置文件失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/config.html": {
+            "get": {
+                "description": "返回系统配置页面的 HTML 内容",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "获取配置页面",
+                "responses": {
+                    "200": {
+                        "description": "配置页面 HTML",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "配置页面加载失败",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -121,6 +280,47 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/generateApiKey": {
+            "post": {
+                "description": "管理员生成新的 API Key 并保存到配置文件，返回生成的 API Key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "生成新的 API Key",
+                "responses": {
+                    "200": {
+                        "description": "生成成功，返回新的 API Key",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.APIKeyResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "无效的请求方法",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "保存API Key失败",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "503": {
+                        "description": "管理员账号未配置",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -303,6 +503,48 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "config.AppConfig": {
+            "type": "object",
+            "properties": {
+                "alist": {
+                    "type": "object",
+                    "properties": {
+                        "host": {
+                            "type": "string"
+                        },
+                        "password": {
+                            "type": "string"
+                        },
+                        "username": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "api_key": {
+                    "description": "独立的 API Key 字段",
+                    "type": "string"
+                },
+                "db_conn": {
+                    "type": "string"
+                },
+                "db_type": {
+                    "type": "string"
+                },
+                "default_points": {
+                    "description": "默认积分配置",
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "gorm.DeletedAt": {
             "type": "object",
             "properties": {
@@ -312,6 +554,25 @@ const docTemplate = `{
                 "valid": {
                     "description": "Valid is true if Time is not NULL",
                     "type": "boolean"
+                }
+            }
+        },
+        "handlers.APIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ConfigStatus": {
+            "type": "object",
+            "properties": {
+                "exists": {
+                    "type": "boolean"
+                },
+                "redirect": {
+                    "type": "string"
                 }
             }
         },
