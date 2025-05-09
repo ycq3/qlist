@@ -34,9 +34,17 @@ jobs:
         run: |
           # Linux
           GOOS=linux GOARCH=amd64 go build -v -o qlist-linux-amd64
+          GOOS=linux GOARCH=arm GOARM=7 go build -v -o qlist-linux-arm
           GOOS=linux GOARCH=arm64 go build -v -o qlist-linux-arm64
+          GOOS=linux GOARCH=loong64 go build -v -o qlist-linux-loong64
+          GOOS=linux GOARCH=mips64 go build -v -o qlist-linux-mips64
+          GOOS=linux GOARCH=mips64le go build -v -o qlist-linux-mips64le
           tar -czf qlist-linux-amd64.tar.gz qlist-linux-amd64
+          tar -czf qlist-linux-arm.tar.gz qlist-linux-arm
           tar -czf qlist-linux-arm64.tar.gz qlist-linux-arm64
+          tar -czf qlist-linux-loong64.tar.gz qlist-linux-loong64
+          tar -czf qlist-linux-mips64.tar.gz qlist-linux-mips64
+          tar -czf qlist-linux-mips64le.tar.gz qlist-linux-mips64le
 
           # macOS
           GOOS=darwin GOARCH=amd64 go build -v -o qlist-darwin-amd64
@@ -55,7 +63,11 @@ jobs:
         with:
           files: |
             qlist-linux-amd64.tar.gz
+            qlist-linux-arm.tar.gz
             qlist-linux-arm64.tar.gz
+            qlist-linux-loong64.tar.gz
+            qlist-linux-mips64.tar.gz
+            qlist-linux-mips64le.tar.gz
             qlist-darwin-amd64.tar.gz
             qlist-darwin-arm64.tar.gz
             qlist-windows-amd64.zip
