@@ -15,76 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin": {
-            "get": {
-                "description": "返回管理后台页面的 HTML 内容，需管理员身份验证",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "配置管理"
-                ],
-                "summary": "获取管理后台页面",
-                "responses": {
-                    "200": {
-                        "description": "管理后台页面 HTML",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "未授权访问",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "管理后台页面不存在或读取失败",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/adminGrantPoints": {
-            "post": {
-                "description": "管理员给用户增加或减少积分\n获取当前登录用户的信息和积分",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "用户管理",
-                    "用户管理"
-                ],
-                "summary": "获取用户信息",
-                "parameters": [
-                    {
-                        "description": "积分操作信息",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/checkConfig": {
             "get": {
                 "description": "检查 config.json 是否存在，返回存在状态和跳转路径",
@@ -247,44 +177,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/downloadFile": {
-            "post": {
-                "description": "扣除用户积分并返回文件下载地址",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "文件下载"
-                ],
-                "summary": "下载文件",
-                "parameters": [
-                    {
-                        "description": "文件信息",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/generateApiKey": {
             "post": {
                 "description": "管理员生成新的 API Key 并保存到配置文件，返回生成的 API Key",
@@ -321,36 +213,6 @@ const docTemplate = `{
                         "description": "管理员账号未配置",
                         "schema": {
                             "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/getFileInfo": {
-            "get": {
-                "description": "获取文件名称和所需积分",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "文件下载"
-                ],
-                "summary": "获取文件信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "文件URL",
-                        "name": "fileUrl",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
                         }
                     }
                 }
@@ -399,44 +261,6 @@ const docTemplate = `{
                         "description": "返回记录数量限制（默认50）",
                         "name": "limit",
                         "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/getUserInfo": {
-            "get": {
-                "description": "管理员给用户增加或减少积分\n获取当前登录用户的信息和积分",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "用户管理",
-                    "用户管理"
-                ],
-                "summary": "获取用户信息",
-                "parameters": [
-                    {
-                        "description": "积分操作信息",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
                     }
                 ],
                 "responses": {
@@ -534,6 +358,38 @@ const docTemplate = `{
                     "description": "默认积分配置",
                     "type": "integer"
                 },
+                "github_oauth": {
+                    "type": "object",
+                    "properties": {
+                        "client_id": {
+                            "type": "string"
+                        },
+                        "client_secret": {
+                            "type": "string"
+                        },
+                        "redirect_uri": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "google_oauth": {
+                    "description": "三方登录配置，均为非必填，未配置则屏蔽对应登录方式",
+                    "type": "object",
+                    "properties": {
+                        "client_id": {
+                            "type": "string"
+                        },
+                        "client_secret": {
+                            "type": "string"
+                        },
+                        "redirect_uri": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "jwt_secret": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -542,6 +398,20 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                },
+                "wechat_oauth": {
+                    "type": "object",
+                    "properties": {
+                        "app_secret": {
+                            "type": "string"
+                        },
+                        "appid": {
+                            "type": "string"
+                        },
+                        "redirect_uri": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

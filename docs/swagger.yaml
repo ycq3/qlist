@@ -21,12 +21,42 @@ definitions:
       default_points:
         description: 默认积分配置
         type: integer
+      github_oauth:
+        properties:
+          client_id:
+            type: string
+          client_secret:
+            type: string
+          redirect_uri:
+            type: string
+        type: object
+      google_oauth:
+        description: 三方登录配置，均为非必填，未配置则屏蔽对应登录方式
+        properties:
+          client_id:
+            type: string
+          client_secret:
+            type: string
+          redirect_uri:
+            type: string
+        type: object
+      jwt_secret:
+        type: string
       password:
         type: string
       port:
         type: integer
       username:
         type: string
+      wechat_oauth:
+        properties:
+          app_secret:
+            type: string
+          appid:
+            type: string
+          redirect_uri:
+            type: string
+        type: object
     type: object
   gorm.DeletedAt:
     properties:
@@ -74,55 +104,6 @@ info:
   title: 积分管理系统API
   version: "1.0"
 paths:
-  /admin:
-    get:
-      description: 返回管理后台页面的 HTML 内容，需管理员身份验证
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: 管理后台页面 HTML
-          schema:
-            type: string
-        "401":
-          description: 未授权访问
-          schema:
-            type: string
-        "500":
-          description: 管理后台页面不存在或读取失败
-          schema:
-            type: string
-      summary: 获取管理后台页面
-      tags:
-      - 配置管理
-  /adminGrantPoints:
-    post:
-      consumes:
-      - application/json
-      description: |-
-        管理员给用户增加或减少积分
-        获取当前登录用户的信息和积分
-      parameters:
-      - description: 积分操作信息
-        in: body
-        name: data
-        required: true
-        schema:
-          additionalProperties: true
-          type: object
-      produces:
-      - application/json
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 获取用户信息
-      tags:
-      - 用户管理
-      - 用户管理
   /api/checkConfig:
     get:
       description: 检查 config.json 是否存在，返回存在状态和跳转路径
@@ -229,31 +210,6 @@ paths:
       summary: 配置文件积分
       tags:
       - 积分配置
-  /downloadFile:
-    post:
-      consumes:
-      - application/json
-      description: 扣除用户积分并返回文件下载地址
-      parameters:
-      - description: 文件信息
-        in: body
-        name: data
-        required: true
-        schema:
-          additionalProperties:
-            type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 下载文件
-      tags:
-      - 文件下载
   /generateApiKey:
     post:
       consumes:
@@ -281,26 +237,6 @@ paths:
       summary: 生成新的 API Key
       tags:
       - 配置管理
-  /getFileInfo:
-    get:
-      description: 获取文件名称和所需积分
-      parameters:
-      - description: 文件URL
-        in: query
-        name: fileUrl
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 获取文件信息
-      tags:
-      - 文件下载
   /getPointsList:
     get:
       description: 获取所有文件的积分配置
@@ -338,34 +274,6 @@ paths:
       summary: 获取积分变更日志
       tags:
       - 积分日志
-  /getUserInfo:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        管理员给用户增加或减少积分
-        获取当前登录用户的信息和积分
-      parameters:
-      - description: 积分操作信息
-        in: body
-        name: data
-        required: true
-        schema:
-          additionalProperties: true
-          type: object
-      produces:
-      - application/json
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 获取用户信息
-      tags:
-      - 用户管理
-      - 用户管理
   /getUserPoints:
     get:
       description: 获取指定用户的积分信息
