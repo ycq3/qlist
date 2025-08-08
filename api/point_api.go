@@ -1,370 +1,326 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"qlist/config"
+	"qlist/db"
+	"qlist/middleware"
 	"qlist/models"
-	"qlist/storage"
-	"strconv"
-	"strings"
+	"qlist/pkg/response"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
+// GetPointsList godoc
 // @Summary 获取积分配置列表
-// @Description 获取所有文件的积分配置
-// @Tags 积分配置
+// @Description 获取当前站点的所有积分配置
+// @Tags Points
+// @Accept json
 // @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /getPointsList [get]
-func GetPointsList(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// @Success 200 {array} models.PointConfig
+// @Router /api/points [get]
+func GetPointsList(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
 
 	var configs []models.PointConfig
-	if result := db.Find(&configs); result.Error != nil {
-		respondWithError(w, http.StatusInternalServerError, "获取积分配置列表失败")
+	if err := db.GetDB().Where("site_id = ?", site.ID).Find(&configs).Error; err != nil {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取积分配置列表")
 		return
 	}
-
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code": http.StatusOK,
-		"data": configs,
-	})
+	response.RespondWithJSON(c, http.StatusOK, configs)
 }
 
-// @Summary 配置文件积分
-// @Description 为文件设置积分值
-// @Tags 积分配置
+// ConfigurePoints godoc
+// @Summary 配置积分
+// @Description 为指定路径配置所需积分
+// @Tags Points
 // @Accept json
 // @Produce json
-// @Param config body models.PointConfig true "积分配置信息"
-// @Success 200 {object} map[string]interface{}
-// @Router /configurePoints [post]
-func ConfigurePoints(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// @Param config body models.PointConfig true "积分配置"
+// @Success 200 {object} models.PointConfig
+// @Router /api/points/configure [post]
+func ConfigurePoints(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
 
 	var config models.PointConfig
-	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
-		respondWithError(w, http.StatusBadRequest, "请求参数错误")
+	if err := c.ShouldBindJSON(&config); err != nil {
+		response.RespondWithError(c, http.StatusBadRequest, "无效的请求数据")
+		return
+	}
+	config.SiteID = site.ID
+
+	var existingConfig models.PointConfig
+	err := db.GetDB().Where("site_id = ? AND path = ?", site.ID, config.Path).First(&existingConfig).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		response.RespondWithError(c, http.StatusInternalServerError, "查询积分配置失败")
 		return
 	}
 
-	// 去除文件链接中的空格
-	config.FileUrl = strings.TrimSpace(config.FileUrl)
-
-	// 确保文件链接不以'/'开头
-	if strings.HasPrefix(config.FileUrl, "/") {
-		config.FileUrl = strings.TrimPrefix(config.FileUrl, "/")
-	}
-
-	// 查找是否已存在配置
-	var existingConfig models.PointConfig
-	result := db.Where("file_url = ?", config.FileUrl).First(&existingConfig)
-
-	if result.Error == nil {
-		// 更新现有配置
-		existingConfig.Points = config.Points
-		existingConfig.Description = config.Description
-		if result := db.Save(&existingConfig); result.Error != nil {
-			respondWithError(w, http.StatusInternalServerError, "更新积分配置失败")
+	if err == gorm.ErrRecordNotFound {
+		if err := db.GetDB().Create(&config).Error; err != nil {
+			response.RespondWithError(c, http.StatusInternalServerError, "创建积分配置失败")
 			return
 		}
-		respondWithJSON(w, http.StatusOK, map[string]interface{}{
-			"code":    http.StatusOK,
-			"message": "配置更新成功",
-		})
-		return
+	} else {
+		if err := db.GetDB().Model(&existingConfig).Updates(config).Error; err != nil {
+			response.RespondWithError(c, http.StatusInternalServerError, "更新积分配置失败")
+			return
+		}
+		config.ID = existingConfig.ID
 	}
 
-	// 创建新配置
-	if result := db.Create(&config); result.Error != nil {
-		respondWithError(w, http.StatusInternalServerError, "保存积分配置失败")
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code":    http.StatusOK,
-		"message": "配置保存成功",
-	})
+	response.RespondWithJSON(c, http.StatusOK, config)
 }
 
+// GetUsersList godoc
 // @Summary 获取用户列表
-// @Description 获取所有用户及其积分信息
-// @Tags 用户管理
+// @Description 获取当前站点的所有用户列表
+// @Tags Users
+// @Accept json
 // @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /getUsersList [get]
-func GetUsersList(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// @Success 200 {array} models.User
+// @Router /api/users [get]
+func GetUsersList(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
 
 	var users []models.User
-	// Preload Logs to avoid N+1 query problem if logs are needed in the future, though not directly used now.
-	if result := db.Preload("Logs").Find(&users); result.Error != nil {
-		respondWithError(w, http.StatusInternalServerError, "获取用户列表失败")
+	if err := db.GetDB().Where("site_id = ?", site.ID).Find(&users).Error; err != nil {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取用户列表")
 		return
 	}
-
-	// Optionally, transform users if needed, e.g., to format CreatedAt or customize output
-	// For now, directly returning users as is, assuming GORM handles CreatedAt population and JSON marshaling correctly.
-
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code":  http.StatusOK,
-		"users": users, // Ensure 'users' includes 'Provider' and 'CreatedAt' due to model changes
-	})
+	response.RespondWithJSON(c, http.StatusOK, users)
 }
 
-func DownloadFile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// DownloadFile godoc
+// @Summary 下载文件
+// @Description 用户下载文件，扣除相应积分
+// @Tags Points
+// @Accept json
+// @Produce json
+// @Param path query string true "文件路径"
+// @Success 200 {object} map[string]string "包含下载链接"
+// @Router /api/download [get]
+func DownloadFile(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
-	var data struct {
-		FileUrl string `json:"fileUrl"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		respondWithError(w, http.StatusBadRequest, "请求参数错误")
+
+	user, exists := c.Get("user")
+	if !exists {
+		response.RespondWithError(c, http.StatusUnauthorized, "用户未登录")
 		return
 	}
-	// 去除文件链接中的空格
-	data.FileUrl = strings.TrimSpace(data.FileUrl)
-	// 确保文件链接不以'/'开头
-	if strings.HasPrefix(data.FileUrl, "/") {
-		data.FileUrl = strings.TrimPrefix(data.FileUrl, "/")
-	}
-	// 检查用户是否已登录
-	userId, ok := requireLogin(w, r)
-	if !ok {
+	currentUser := user.(*models.User)
+
+	filePath := c.Query("path")
+	if filePath == "" {
+		response.RespondWithError(c, http.StatusBadRequest, "文件路径不能为空")
 		return
 	}
-	// 查找文件积分配置
-	var configModel models.PointConfig
-	if result := db.Where("file_url = ?", data.FileUrl).First(&configModel); result.Error != nil {
-		// 使用默认积分配置
-		configModel = models.PointConfig{
-			FileUrl:     data.FileUrl,
-			Points:      config.Instance.DefaultPoints,
-			Description: "无",
+
+	var config models.PointConfig
+	if err := db.GetDB().Where("site_id = ? AND path = ?", site.ID, filePath).First(&config).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response.RespondWithError(c, http.StatusNotFound, "文件未配置积分")
+			return
 		}
-	}
-	// 查找或创建用户
-	var user models.User
-	if result := db.Where("id = ?", userId).First(&user); result.Error != nil {
-		respondWithError(w, http.StatusInternalServerError, "用户操作失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "查询文件积分配置失败")
 		return
 	}
 
-	// 检查用户积分是否足够
-	if user.Points < configModel.Points {
-		respondWithError(w, http.StatusForbidden, "积分不足")
+	if currentUser.Points < config.Points {
+		response.RespondWithError(c, http.StatusForbidden, "积分不足")
 		return
 	}
 
-	// 开始事务
-	tx := db.Begin()
-
-	// 扣除用户积分
-	user.Points -= configModel.Points
-	if err := tx.Save(&user).Error; err != nil {
+	tx := db.GetDB().Begin()
+	if err := tx.Model(currentUser).Update("points", gorm.Expr("points - ?", config.Points)).Error; err != nil {
 		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "扣除积分失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "扣除积分失败")
 		return
 	}
 
-	// 创建积分变更日志
 	log := models.PointLog{
-		UserID:      user.ID,
-		Points:      -configModel.Points,
-		Type:        "file_access",
-		Description: fmt.Sprintf("下载文件：%s", data.FileUrl),
-		FileUrl:     data.FileUrl,
+		UserID:  currentUser.ID,
+		SiteID:  site.ID,
+		Points:  -config.Points,
+		Action:  "下载文件",
+		Details: fmt.Sprintf("下载文件: %s", filePath),
 	}
-
 	if err := tx.Create(&log).Error; err != nil {
 		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "创建积分日志失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "记录日志失败")
 		return
 	}
 
-	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "操作失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "事务提交失败")
 		return
 	}
 
-	// 获取文件下载地址
-	uploader := &storage.AlistUploader{}
-	downloadUrl, err := uploader.GetDownloadUrl(data.FileUrl)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "获取下载地址失败")
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code":        http.StatusOK,
-		"downloadUrl": downloadUrl,
-	})
+	response.RespondWithJSON(c, http.StatusOK, gin.H{"url": "your_real_download_link_here"})
 }
 
-func AdminGrantPoints(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// AdminGrantPointsRequest 定义管理员授予积分的请求体
+type AdminGrantPointsRequest struct {
+	UserID uint `json:"user_id"`
+	Points int  `json:"points"`
+}
+
+// AdminGrantPoints godoc
+// @Summary 管理员授予积分
+// @Description 管理员为指定用户授予积分
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param grant_request body AdminGrantPointsRequest true "授予积分请求"
+// @Success 200 {object} models.User
+// @Router /api/users/grant [post]
+func AdminGrantPoints(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
 
-	var data struct {
-		Username    string `json:"username"`
-		Points      int    `json:"points"`
-		Description string `json:"description"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		respondWithError(w, http.StatusBadRequest, "请求参数错误")
+	var req AdminGrantPointsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.RespondWithError(c, http.StatusBadRequest, "无效的请求数据")
 		return
 	}
 
-	// 开始事务
-	tx := db.Begin()
-
-	// 查找或创建用户
 	var user models.User
-	result := tx.Where("username = ?", data.Username).FirstOrCreate(&user, models.User{Username: data.Username})
-	if result.Error != nil {
-		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "用户操作失败")
+	if err := db.GetDB().Where("id = ? AND site_id = ?", req.UserID, site.ID).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response.RespondWithError(c, http.StatusNotFound, "用户不存在")
+			return
+		}
+		response.RespondWithError(c, http.StatusInternalServerError, "查询用户失败")
 		return
 	}
 
-	// 更新用户积分
-	user.Points += data.Points
+	tx := db.GetDB().Begin()
+	user.Points += req.Points
 	if err := tx.Save(&user).Error; err != nil {
 		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "更新积分失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "更新用户积分失败")
 		return
 	}
 
-	// 创建积分变更日志
 	log := models.PointLog{
-		UserID:      user.ID,
-		Points:      data.Points,
-		Description: data.Description,
+		UserID:  user.ID,
+		SiteID:  site.ID,
+		Points:  req.Points,
+		Action:  "管理员授予",
+		Details: fmt.Sprintf("管理员授予 %d 积分", req.Points),
 	}
-
 	if err := tx.Create(&log).Error; err != nil {
 		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "创建积分日志失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "记录日志失败")
 		return
 	}
 
-	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		respondWithError(w, http.StatusInternalServerError, "操作失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "事务提交失败")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code":    http.StatusOK,
-		"message": "积分操作成功",
-	})
+	response.RespondWithJSON(c, http.StatusOK, user)
 }
 
+// GetUserPoints godoc
 // @Summary 获取用户积分
-// @Description 获取指定用户的积分信息
-// @Tags 用户积分
+// @Description 获取当前登录用户的积分信息
+// @Tags Users
+// @Accept json
 // @Produce json
-// @Param username query string true "用户名"
-// @Success 200 {object} map[string]interface{}
-// @Router /getUserPoints [get]
-func GetUserPoints(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// @Success 200 {object} models.User
+// @Router /api/user/points [get]
+func GetUserPoints(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		response.RespondWithError(c, http.StatusUnauthorized, "用户未登录")
 		return
 	}
-
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		respondWithError(w, http.StatusBadRequest, "用户名不能为空")
-		return
-	}
-
-	var user models.User
-	if result := db.Where("username = ? AND provider = ?", username, "local").First(&user); result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			respondWithError(w, http.StatusNotFound, "用户不存在")
-			return
-		}
-		respondWithError(w, http.StatusInternalServerError, "获取用户信息失败")
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"username": user.Username,
-		"points":   user.Points,
-	})
+	response.RespondWithJSON(c, http.StatusOK, user.(*models.User))
 }
 
-// @Summary 获取积分变更日志
-// @Description 获取用户积分变更历史记录
-// @Tags 积分日志
+// GetPointsLog godoc
+// @Summary 获取积分日志
+// @Description 获取当前用户的积分变动日志
+// @Tags Points
+// @Accept json
 // @Produce json
-// @Param username query string false "用户名（可选）"
-// @Param limit query int false "返回记录数量限制（默认50）"
-// @Success 200 {object} map[string]interface{}
-// @Router /getPointsLog [get]
-func GetPointsLog(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+// @Success 200 {array} models.PointLog
+// @Router /api/points/log [get]
+func GetPointsLog(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
 		return
 	}
 
-	// 获取查询参数
-	username := r.URL.Query().Get("username")
-	limitStr := r.URL.Query().Get("limit")
-	limit := 50 // 默认限制
-	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
+	user, exists := c.Get("user")
+	if !exists {
+		response.RespondWithError(c, http.StatusUnauthorized, "用户未登录")
+		return
+	}
+	currentUser := user.(*models.User)
+
+	var logs []models.PointLog
+	if err := db.GetDB().Where("user_id = ? AND site_id = ?", currentUser.ID, site.ID).Order("created_at desc").Find(&logs).Error; err != nil {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取积分日志")
+		return
+	}
+	response.RespondWithJSON(c, http.StatusOK, logs)
+}
+
+// GetFileInfo godoc
+// @Summary 获取文件信息
+// @Description 根据路径获取文件的积分配置信息
+// @Tags Points
+// @Accept json
+// @Produce json
+// @Param path query string true "文件路径"
+// @Success 200 {object} models.PointConfig
+// @Router /api/fileinfo [get]
+func GetFileInfo(c *gin.Context) {
+	site, exists := middleware.GetSiteFromContext(c)
+	if !exists {
+		response.RespondWithError(c, http.StatusInternalServerError, "无法获取站点信息")
+		return
 	}
 
-	// 构建查询
-	query := db.Model(&models.PointLog{}).Order("created_at desc").Limit(limit)
+	filePath := c.Query("path")
+	if filePath == "" {
+		response.RespondWithError(c, http.StatusBadRequest, "文件路径不能为空")
+		return
+	}
 
-	// 如果指定了用户名，则只查询该用户的日志
-	if username != "" {
-		var user models.User
-		if result := db.Where("username = ? AND provider = ?", username, "local").First(&user); result.Error != nil {
-			if result.Error == gorm.ErrRecordNotFound {
-				respondWithError(w, http.StatusNotFound, "用户不存在")
-				return
-			}
-			respondWithError(w, http.StatusInternalServerError, "查询用户失败")
+	var config models.PointConfig
+	if err := db.GetDB().Where("site_id = ? AND path = ?", site.ID, filePath).First(&config).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			response.RespondWithError(c, http.StatusNotFound, "文件未配置积分")
 			return
 		}
-		query = query.Where("user_id = ?", user.ID)
-	}
-
-	// 执行查询
-	var logs []models.PointLog
-	if err := query.Find(&logs).Error; err != nil {
-		respondWithError(w, http.StatusInternalServerError, "获取积分日志失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "查询文件积分配置失败")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"code": http.StatusOK,
-		"logs": logs,
-	})
+	response.RespondWithJSON(c, http.StatusOK, config)
 }

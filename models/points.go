@@ -23,8 +23,8 @@ type User struct {
 // PointConfig 积分配置
 type PointConfig struct {
 	gorm.Model
-	SiteID      uint   `gorm:"uniqueIndex:idx_site_file_url;not null,default:0" json:"siteId"`
-	FileUrl     string `gorm:"column:file_url;type:varchar(255);uniqueIndex:idx_site_file_url" json:"fileUrl"` // 文件路径
+	SiteID      uint   `gorm:"uniqueIndex:idx_site_path;not null,default:0" json:"siteId"`
+	Path        string `gorm:"column:path;type:varchar(255);uniqueIndex:idx_site_path" json:"path"`       // 文件路径
 	Points      int    `gorm:"column:points" json:"points"`                                                    // 积分值
 	Description string `gorm:"column:description;type:varchar(255)" json:"description"`                        // 积分描述
 	Site        Site   `gorm:"foreignKey:SiteID"`
@@ -33,14 +33,13 @@ type PointConfig struct {
 // PointLog 积分变更日志
 type PointLog struct {
 	gorm.Model
-	UserID      uint      `gorm:"column:user_id;index" json:"userId"` // 用户ID
-	SiteID      uint      `gorm:"column:site_id;index;not null,default:0" json:"siteId"`
-	Points      int       `gorm:"column:points" json:"points"`                                  // 变更积分值（正数为增加，负数为减少）
-	Type        string    `gorm:"column:type;type:varchar(20)" json:"type"`                     // 变更类型：file_access（文件访问）, admin_grant（管理员授予）
-	Description string    `gorm:"column:description;type:varchar(255)" json:"description"`      // 变更描述
-	FileUrl     string    `gorm:"column:file_url;type:varchar(255)" json:"fileUrl,omitempty"`   // 相关文件路径（可选）
-	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"` // 变更时间
-	Site        Site      `gorm:"foreignKey:SiteID"`
+	UserID    uint      `gorm:"column:user_id;index" json:"userId"` // 用户ID
+	SiteID    uint      `gorm:"column:site_id;index;not null,default:0" json:"siteId"`
+	Points    int       `gorm:"column:points" json:"points"`                                // 变更积分值（正数为增加，负数为减少）
+	Action    string    `gorm:"column:action;type:varchar(50)" json:"action"`               // 变更类型：file_access（文件访问）, admin_grant（管理员授予）
+	Details   string    `gorm:"column:details;type:varchar(255)" json:"details"`            // 变更描述
+	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"` // 变更时间
+	Site      Site      `gorm:"foreignKey:SiteID"`
 }
 
 func (User) TableName() string {
