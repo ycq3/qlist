@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"qlist/api"
 	"qlist/cmd"
@@ -9,6 +10,7 @@ import (
 	"qlist/db"
 	"qlist/docs"
 	"qlist/middleware"
+	"qlist/public"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -41,10 +43,30 @@ func main() {
 		return
 	}
 
-	
+	// 设置为生产模式，提高性能
+	if os.Getenv("ENV") != "development" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	// 初始化 Gin 引擎
 	router := gin.Default()
+
+	// 添加静态文件处理
+	router.StaticFS("/static", http.FS(public.Public))
+
+	// 添加SEO友好的头部中间件
+	router.Use(middleware.SEOMiddleware())
+
+	// 添加robots.txt和sitemap.xml路由
+	router.GET("/robots.txt", func(c *gin.Context) {
+		c.Header("Content-Type", "text/plain")
+		c.File("public/dist/robots.txt")
+	})
+
+	router.GET("/sitemap.xml", func(c *gin.Context) {
+		c.Header("Content-Type", "application/xml")
+		c.File("public/dist/sitemap.xml")
+	})
 
 	// 初始化 Swagger 文档
 	docs.SwaggerInfo.Title = "Qlist积分管理系统 API"

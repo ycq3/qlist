@@ -15,8 +15,19 @@ func (h *StaticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 清理和标准化请求路径
 	urlPath := path.Clean(r.URL.Path)
 
+	// 添加SEO友好的头部
+	w.Header().Set("X-Robots-Tag", "index, follow")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
 	// 处理特殊路由
 	switch urlPath {
+	case "/":
+		// 重定向到首页
+		http.Redirect(w, r, "/dist/index.html", http.StatusMovedPermanently)
+		return
 	case "/admin":
 		// 重定向到admin.html
 		http.Redirect(w, r, "/dist/admin.html", http.StatusMovedPermanently)
