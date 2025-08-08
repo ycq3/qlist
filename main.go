@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 	"qlist/api"
+	"qlist/cmd"
 	"qlist/config"
 	"qlist/docs"
 	"qlist/handlers"
@@ -19,16 +22,15 @@ import (
 // @BasePath /api
 
 func main() {
-	// 注册静态文件处理
-	http.HandleFunc("/download/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/dist/download.html")
-	})
-	http.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/dist/login.html")
-	})
-	http.HandleFunc("/register.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "public/dist/register.html")
-	})
+	// 注册 `init` 命令的命令行参数
+	initFlags := cmd.RegisterInitFlags()
+	flag.Parse()
+
+	// 如果是 `init` 命令，则执行初始化并退出
+	if os.Args[1] == "init" {
+		cmd.HandleInitCommand(initFlags)
+		return
+	}
 
 	// 加载配置文件
 	err := config.LoadConfig("config.json")
@@ -48,48 +50,71 @@ func main() {
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.BasePath = "/api"
 
+	// 初始化中间件
+	authMiddleware := &middleware.AuthMiddleware{}
+	siteMiddleware := &middleware.SiteMiddleware{}
+
+	// 创建一个新的路由器
+	mux := http.NewServeMux()
+
+	// 注册静态文件处理
+	mux.HandleFunc("/download/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/dist/download.html")
+	})
+	mux.HandleFunc("/login.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/dist/login.html")
+	})
+	mux.HandleFunc("/register.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/dist/register.html")
+	})
+
 	// 初始化静态文件处理器
 	staticHandler := &handlers.StaticHandler{}
-
-	// 初始化认证中间件
-	authMiddleware := &middleware.AuthMiddleware{}
-
-	// 注册静态文件处理器，处理所有静态文件和需要权限控制的页面
-	http.Handle("/", staticHandler)
+	mux.Handle("/", staticHandler)
 
 	// 普通API路由（无需认证）
-	http.HandleFunc("/api/getUserPoints", api.GetUserPoints)
-	http.HandleFunc("/api/getPointsLog", api.GetPointsLog)
-	http.HandleFunc("/api/getPointsList", api.GetPointsList)
-	http.HandleFunc("/api/getUserInfo", api.GetUserInfo)
-	http.HandleFunc("/api/downloadFile", api.DownloadFile)
-	http.HandleFunc("/api/getFileInfo", api.GetFileInfo)
+	mux.HandleFunc("/api/getUserPoints", api.GetUserPoints)
+	mux.HandleFunc("/api/getPointsLog", api.GetPointsLog)
+	mux.HandleFunc("/api/getPointsList", api.GetPointsList)
+	mux.HandleFunc("/api/getUserInfo", api.GetUserInfo)
+	mux.HandleFunc("/api/downloadFile", api.DownloadFile)
+	mux.HandleFunc("/api/getFileInfo", api.GetFileInfo)
 	// 本地登录注册接口
-	http.HandleFunc("/api/login/local", api.LocalLoginHandler)
-	http.HandleFunc("/api/register/local", api.LocalRegisterHandler)
+	mux.HandleFunc("/api/login/local", api.LocalLoginHandler)
+	mux.HandleFunc("/api/register/local", api.LocalRegisterHandler)
 	// 三方登录跳转接口
-	http.HandleFunc("/api/login/google", api.LoginGoogle)
-	http.HandleFunc("/api/login/github", api.LoginGitHub)
-	http.HandleFunc("/api/login/wechat", api.LoginWechat)
-	http.HandleFunc("/api/login/google/callback", api.GoogleCallback)
-	http.HandleFunc("/api/login/github/callback", api.GitHubCallback)
-	http.HandleFunc("/api/login/wechat/callback", api.WechatCallback)
+	mux.HandleFunc("/api/login/google", api.LoginGoogle)
+	mux.HandleFunc("/api/login/github", api.LoginGitHub)
+	mux.HandleFunc("/api/login/wechat", api.LoginWechat)
+	mux.HandleFunc("/api/login/google/callback", api.GoogleCallback)
+	mux.HandleFunc("/api/login/github/callback", api.GitHubCallback)
+	mux.HandleFunc("/api/login/wechat/callback", api.WechatCallback)
+
+	// 站点管理API (需要认证)
+	mux.HandleFunc("/api/sites", authMiddleware.RequireAuth(api.CreateSite))
+	mux.HandleFunc("/api/sites/list", authMiddleware.RequireAuth(api.GetSites))
+	mux.HandleFunc("/api/sites/get", authMiddleware.RequireAuth(api.GetSite))
+	mux.HandleFunc("/api/sites/update", authMiddleware.RequireAuth(api.UpdateSite))
+	mux.HandleFunc("/api/sites/delete", authMiddleware.RequireAuth(api.DeleteSite))
 
 	// 敏感API路由（需要认证）
-	http.HandleFunc("/api/configurePoints", authMiddleware.RequireAuth(api.ConfigurePoints))
-	http.HandleFunc("/api/getUsersList", authMiddleware.RequireAuth(api.GetUsersList))
-	http.HandleFunc("/api/adminGrantPoints", authMiddleware.RequireAuth(api.AdminGrantPoints))
+	mux.HandleFunc("/api/configurePoints", authMiddleware.RequireAuth(api.ConfigurePoints))
+	mux.HandleFunc("/api/getUsersList", authMiddleware.RequireAuth(api.GetUsersList))
+	mux.HandleFunc("/api/adminGrantPoints", authMiddleware.RequireAuth(api.AdminGrantPoints))
 	handler := &handlers.ConfigHandler{}
-	http.HandleFunc("/api/generateApiKey", authMiddleware.RequireAuth(handler.GenerateAPIKey))
-	http.HandleFunc("/api/getApiKey", authMiddleware.RequireAuth(handler.GetApiKey))
+	mux.HandleFunc("/api/generateApiKey", authMiddleware.RequireAuth(handler.GenerateAPIKey))
+	mux.HandleFunc("/api/getApiKey", authMiddleware.RequireAuth(handler.GetApiKey))
 
 	// Swagger API 文档
-	http.Handle("/swagger/", httpSwagger.Handler(
+	mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("doc.json"), // URL指向API文档
 	))
+
+	// 应用站点中间件
+	mainHandler := siteMiddleware.Handler(mux)
 
 	// 启动服务器
 	addr := ":" + strconv.Itoa(config.Instance.Port)
 	log.Printf("Server started on port %d", config.Instance.Port)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Fatal(http.ListenAndServe(addr, mainHandler))
 }

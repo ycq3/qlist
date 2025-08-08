@@ -13,30 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
-
-// @title 积分管理系统API
-// @version 1.0
-// @description 提供用户积分管理、积分配置、积分日志查询和文件下载等功能
-// @BasePath /api
-
-func InitDB() error {
-	var err error
-	dialector, err := config.GetDialector()
-	if err != nil {
-		return fmt.Errorf("请先完成数据库配置: %w", err)
-	}
-
-	db, err = gorm.Open(dialector, &gorm.Config{})
-	if err != nil {
-		return fmt.Errorf("数据库连接失败: %w", err)
-	}
-
-	// 自动迁移数据库结构
-	db.AutoMigrate(&models.User{}, &models.PointConfig{}, &models.PointLog{})
-	return nil
-}
-
 // @Summary 获取积分配置列表
 // @Description 获取所有文件的积分配置
 // @Tags 积分配置

@@ -9,31 +9,38 @@ import (
 // User 用户模型，支持多渠道（provider）和本地密码
 type User struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
-	Username  string     `gorm:"index:idx_user_provider,unique;size:128" json:"username"` // 用户名或邮箱
-	Provider  string     `gorm:"index:idx_user_provider,unique;size:32" json:"provider"`  // 用户来源渠道 local/google/github/wechat
-	Password  string     `gorm:"size:255" json:"password,omitempty"`                      // 本地用户密码，三方登录为空
+	SiteID    uint       `gorm:"index:idx_user_site_provider,unique;not null,default:0" json:"siteId"`
+	Username  string     `gorm:"index:idx_user_site_provider,unique;size:128" json:"username"` // 用户名或邮箱
+	Provider  string     `gorm:"index:idx_user_site_provider,unique;size:32" json:"provider"`  // 用户来源渠道 local/google/github/wechat
+	Password  string     `gorm:"size:255" json:"password,omitempty"`                           // 本地用户密码，三方登录为空
 	Points    int        `json:"points"`
+	IsAdmin   bool       `gorm:"default:false" json:"isAdmin"`
 	Logs      []PointLog `gorm:"foreignKey:UserID" json:"logs,omitempty"`
 	CreatedAt time.Time  `gorm:"autoCreateTime" json:"createdAt"`
+	Site      Site       `gorm:"foreignKey:SiteID"`
 }
 
 // PointConfig 积分配置
 type PointConfig struct {
 	gorm.Model
-	FileUrl     string `gorm:"column:file_url;type:varchar(255);uniqueIndex" json:"fileUrl"` // 文件路径
-	Points      int    `gorm:"column:points" json:"points"`                                  // 积分值
-	Description string `gorm:"column:description;type:varchar(255)" json:"description"`      // 积分描述
+	SiteID      uint   `gorm:"uniqueIndex:idx_site_file_url;not null,default:0" json:"siteId"`
+	FileUrl     string `gorm:"column:file_url;type:varchar(255);uniqueIndex:idx_site_file_url" json:"fileUrl"` // 文件路径
+	Points      int    `gorm:"column:points" json:"points"`                                                    // 积分值
+	Description string `gorm:"column:description;type:varchar(255)" json:"description"`                        // 积分描述
+	Site        Site   `gorm:"foreignKey:SiteID"`
 }
 
 // PointLog 积分变更日志
 type PointLog struct {
 	gorm.Model
-	UserID      uint      `gorm:"column:user_id;index" json:"userId"`                           // 用户ID
+	UserID      uint      `gorm:"column:user_id;index" json:"userId"` // 用户ID
+	SiteID      uint      `gorm:"column:site_id;index;not null,default:0" json:"siteId"`
 	Points      int       `gorm:"column:points" json:"points"`                                  // 变更积分值（正数为增加，负数为减少）
 	Type        string    `gorm:"column:type;type:varchar(20)" json:"type"`                     // 变更类型：file_access（文件访问）, admin_grant（管理员授予）
 	Description string    `gorm:"column:description;type:varchar(255)" json:"description"`      // 变更描述
 	FileUrl     string    `gorm:"column:file_url;type:varchar(255)" json:"fileUrl,omitempty"`   // 相关文件路径（可选）
 	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"createdAt"` // 变更时间
+	Site        Site      `gorm:"foreignKey:SiteID"`
 }
 
 func (User) TableName() string {
