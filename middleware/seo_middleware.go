@@ -10,9 +10,6 @@ func SEOMiddleware() gin.HandlerFunc {
 		// 添加X-Robots-Tag头部，允许搜索引擎索引
 		c.Header("X-Robots-Tag", "index, follow")
 
-		// 添加Content-Security-Policy头部
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
-
 		// 添加X-Content-Type-Options头部
 		c.Header("X-Content-Type-Options", "nosniff")
 

@@ -17,7 +17,7 @@ type File struct {
 	Downloads   int       `gorm:"column:downloads;default:0" json:"downloads"`                 // 下载次数
 	UploadedAt  time.Time `gorm:"column:uploaded_at;default:CURRENT_TIMESTAMP" json:"uploadedAt"` // 上传时间
 	Site        Site      `gorm:"foreignKey:SiteID"`
-	PointConfig PointConfig `gorm:"foreignKey:Path,references:Path" json:"pointConfig,omitempty"` // 关联的积分配置
+	PointConfig PointConfig `json:"pointConfig,omitempty"` // 关联的积分配置
 }
 
 // TableName 指定表名

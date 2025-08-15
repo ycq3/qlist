@@ -24,7 +24,7 @@ type User struct {
 type PointConfig struct {
 	gorm.Model
 	SiteID      uint   `gorm:"uniqueIndex:idx_site_path;not null,default:0" json:"siteId"`
-	Path        string `gorm:"column:path;type:varchar(255);uniqueIndex:idx_site_path" json:"path"`       // 文件路径
+	FileID      uint   `gorm:"uniqueIndex:idx_site_path;not null,default:0" json:"fileId"`
 	Points      int    `gorm:"column:points" json:"points"`                                                    // 积分值
 	Description string `gorm:"column:description;type:varchar(255)" json:"description"`                        // 积分描述
 	Site        Site   `gorm:"foreignKey:SiteID"`

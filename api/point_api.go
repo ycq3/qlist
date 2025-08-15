@@ -60,7 +60,7 @@ func ConfigurePoints(c *gin.Context) {
 	config.SiteID = site.ID
 
 	var existingConfig models.PointConfig
-	err := db.GetDB().Where("site_id = ? AND path = ?", site.ID, config.Path).First(&existingConfig).Error
+	err := db.GetDB().Where("site_id = ? AND file_id = ?", site.ID, config.FileID).First(&existingConfig).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		response.RespondWithError(c, http.StatusInternalServerError, "查询积分配置失败")
 		return
