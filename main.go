@@ -9,8 +9,10 @@ import (
 	"qlist/config"
 	"qlist/db"
 	"qlist/docs"
+	"qlist/handlers"
 	"qlist/middleware"
 	"qlist/public"
+	"qlist/storage"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -48,6 +50,9 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// 初始化存储服务
+	storage.Init()
+
 	// 初始化 Gin 引擎
 	router := gin.Default()
 
@@ -78,6 +83,11 @@ func main() {
 	// 应用站点中间件
 	router.Use(middleware.SiteMiddleware())
 
+	// 静态文件处理
+	router.NoRoute(func(c *gin.Context) {
+		(&handlers.StaticHandler{}).ServeHTTP(c.Writer, c.Request)
+	})
+
 	// API 路由
 	apiGroup := router.Group("/api")
 	{
@@ -100,6 +110,7 @@ func main() {
 		// 文件相关
 		apiGroup.GET("/download", api.DownloadFile)
 		apiGroup.GET("/fileinfo", api.GetFileInfo)
+		apiGroup.GET("/files/recent", api.GetRecentFiles)
 	}
 
 	// 启动服务器

@@ -24,7 +24,7 @@ func InitDB() error {
 	}
 
 	// 自动迁移数据库结构
-	return db.AutoMigrate(&models.Site{}, &models.User{}, &models.PointConfig{}, &models.PointLog{})
+	return db.AutoMigrate(&models.Site{}, &models.User{}, &models.PointConfig{}, &models.PointLog{}, &models.File{})
 }
 
 // GetDB 返回数据库连接实例

@@ -60,6 +60,39 @@ func (a *AlistUploader) CopyImage(originUrl string) (string, error) {
 	return "", nil
 }
 
+// GetFileList 获取指定目录下的文件列表
+func (a *AlistUploader) GetFileList(path string) ([]map[string]interface{}, error) {
+	token, err := a.GetToken()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := resty.New().R().
+		SetHeader("Authorization", token).
+		Get(Host + "/api/fs/list?path=" + url.PathEscape(path))
+	if err != nil {
+		return nil, err
+	}
+
+	if gjson.Get(resp.String(), "code").Int() != 200 {
+		return nil, errors.New(resp.String())
+	}
+
+	var files []map[string]interface{}
+	gjson.Get(resp.String(), "data.content").ForEach(func(key, value gjson.Result) bool {
+		file := make(map[string]interface{})
+		file["name"] = value.Get("name").String()
+		file["path"] = path + "/" + value.Get("name").String()
+		file["size"] = value.Get("size").Int()
+		file["is_dir"] = value.Get("is_dir").Bool()
+		file["modified"] = value.Get("modified").String()
+		files = append(files, file)
+		return true
+	})
+
+	return files, nil
+}
+
 func (a *AlistUploader) GetDownloadUrl(key string) (string, error) {
 	token, err := a.GetToken()
 	if err != nil {

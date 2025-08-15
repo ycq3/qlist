@@ -7,6 +7,7 @@ import (
 	"qlist/middleware"
 	"qlist/models"
 	"qlist/pkg/response"
+	"qlist/storage"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -149,6 +150,7 @@ func DownloadFile(c *gin.Context) {
 	}
 
 	tx := db.GetDB().Begin()
+	// 更新用户积分
 	if err := tx.Model(currentUser).Update("points", gorm.Expr("points - ?", config.Points)).Error; err != nil {
 		tx.Rollback()
 		response.RespondWithError(c, http.StatusInternalServerError, "扣除积分失败")
@@ -159,21 +161,38 @@ func DownloadFile(c *gin.Context) {
 		UserID:  currentUser.ID,
 		SiteID:  site.ID,
 		Points:  -config.Points,
-		Action:  "下载文件",
+		Action:  "file_access",
 		Details: fmt.Sprintf("下载文件: %s", filePath),
 	}
 	if err := tx.Create(&log).Error; err != nil {
 		tx.Rollback()
-		response.RespondWithError(c, http.StatusInternalServerError, "记录日志失败")
+		response.RespondWithError(c, http.StatusInternalServerError, "记录积分日志失败")
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		response.RespondWithError(c, http.StatusInternalServerError, "事务提交失败")
+		tx.Rollback()
+		response.RespondWithError(c, http.StatusInternalServerError, "提交事务失败")
 		return
 	}
 
-	response.RespondWithJSON(c, http.StatusOK, gin.H{"url": "your_real_download_link_here"})
+	// 更新文件下载次数
+	if err := UpdateFileDownloadCount(site.ID, filePath); err != nil {
+		// 仅记录错误，不影响用户下载
+		fmt.Printf("更新文件下载次数失败: %v\n", err)
+	}
+
+	// 获取下载链接
+	uploader := &storage.AlistUploader{}
+	downloadUrl, err := uploader.GetDownloadUrl(filePath)
+	if err != nil {
+		response.RespondWithError(c, http.StatusInternalServerError, "获取下载链接失败")
+		return
+	}
+
+	response.RespondWithJSON(c, http.StatusOK, gin.H{
+		"url": downloadUrl,
+	})
 }
 
 // AdminGrantPointsRequest 定义管理员授予积分的请求体
